@@ -9,18 +9,26 @@ temperature_monitor – отображает температуру Android‑у
 """
 
 import subprocess
+import shlex
 import re
-from PyQt6.QtCore import Qt, QTimer
-from PyQt6.QtWidgets import (
-    QWidget, QVBoxLayout, QProgressBar, QLabel,
-    QMessageBox, QHBoxLayout
-)
+from PyQt6.QtCore import QTimer
+from PyQt6.QtWidgets import QWidget, QVBoxLayout, QProgressBar, QLabel, QHBoxLayout
 
 
 def _run_adb(main_window, cmd):
-    adb = main_window.settings.get("adb_path", "adb") if hasattr(main_window, "settings") else "adb"
+    adb = (
+        main_window.settings.get("adb_path", "adb")
+        if hasattr(main_window, "settings")
+        else "adb"
+    )
     try:
-        out = subprocess.check_output([adb] + cmd.split(), text=True, timeout=5)
+        out = subprocess.check_output(
+            main_window.build_adb_args(cmd, main_window.get_selected_device_id())
+            if hasattr(main_window, "build_adb_args")
+            else [adb] + shlex.split(cmd),
+            text=True,
+            timeout=5,
+        )
         return out
     except Exception:
         return ""
@@ -33,14 +41,14 @@ def register(main_window):
     # --------------------------------------------------------------
     #   Создаём один (или несколько) прогресс‑баров
     # --------------------------------------------------------------
-    temp_bars = []      # список (label, bar, threshold)
+    temp_bars = []  # список (label, bar, threshold)
 
     def add_bar(name: str, threshold: int = 45):
         hb = QHBoxLayout()
         lbl = QLabel(name)
         lbl.setMinimumWidth(150)
         bar = QProgressBar()
-        bar.setRange(0, 150)                # температура в градусах Цельсия
+        bar.setRange(0, 150)  # температура в градусах Цельсия
         bar.setFormat("%v°C")
         hb.addWidget(lbl)
         hb.addWidget(bar, 1)
@@ -55,7 +63,7 @@ def register(main_window):
     #   Обновление температуры
     # --------------------------------------------------------------
     timer = QTimer(main_window)
-    timer.setInterval(3000)          # каждые 3 сек
+    timer.setInterval(3000)  # каждые 3 сек
 
     def refresh():
         out = _run_adb(main_window, "shell dumpsys thermalservice")
@@ -69,7 +77,7 @@ def register(main_window):
         for i, (value, sensor) in enumerate(matches):
             temp = float(value)
             if i >= len(temp_bars):
-                add_bar(sensor)          # добавляем новый бар, если датчик новый
+                add_bar(sensor)  # добавляем новый бар, если датчик новый
             name, bar, thresh = temp_bars[i]
             bar.setMaximum(150)
             bar.setValue(int(temp))

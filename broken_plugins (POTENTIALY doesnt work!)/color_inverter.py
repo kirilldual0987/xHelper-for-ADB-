@@ -10,14 +10,12 @@ color_inverter – плагин, который добавляет пункт «
 исходная палитра, запомненная при первом переключении.
 """
 
-import sys
 from typing import Optional
 
 from PyQt6.QtGui import (
-    QAction,          # QAction находится в QtGui в PyQt6
+    QAction,  # QAction находится в QtGui в PyQt6
     QPalette,
     QColor,
-    QIcon,
     QStyle,
 )
 from PyQt6.QtWidgets import (
@@ -25,8 +23,8 @@ from PyQt6.QtWidgets import (
     QApplication,
     QPushButton,
     QWidgetAction,
-    QStyleOption,
 )
+
 
 # ----------------------------------------------------------------------
 #   Вспомогательные функции
@@ -103,7 +101,9 @@ def register(main_window):
     """
     view_menu = _find_view_menu(main_window)
     if view_menu is None:
-        main_window.log_message("[UI‑Inverter] Не найдено меню «Вид». Плагин не будет загружен.")
+        main_window.log_message(
+            "[UI‑Inverter] Не найдено меню «Вид». Плагин не будет загружен."
+        )
         return
 
     # --------------------------------------------------------------
@@ -132,8 +132,8 @@ def register(main_window):
     # при переключении пункта меню – обновляем кнопку.
     btn.toggled.connect(
         lambda ch: (
-            invert_action.setChecked(ch),                # пункт меню
-            _toggle_inversion(main_window, ch)           # палитра
+            invert_action.setChecked(ch),  # пункт меню
+            _toggle_inversion(main_window, ch),  # палитра
         )
     )
     invert_action.toggled.connect(btn.setChecked)  # обратная связь
@@ -149,5 +149,7 @@ def register(main_window):
     # --------------------------------------------------------------
     #   Информируем пользователя о загрузке
     # --------------------------------------------------------------
-    main_window.log_message("[UI‑Inverter] Плагин загружен – пункт в меню «Вид» "
-                            "и кнопка‑переключатель добавлены.")
+    main_window.log_message(
+        "[UI‑Inverter] Плагин загружен – пункт в меню «Вид» "
+        "и кнопка‑переключатель добавлены."
+    )

@@ -9,7 +9,7 @@ device_cleanup – плагин для поиска и очистки «тяжё
  • Поиск всех файлов размером более 2 GB (используется `adb shell find …`).
  • Вывод найденных файлов в таблицу с чек‑боксами.
  • Кнопка **«Удалить выбранные»** → `adb shell rm -f <path>`.
- • Кнопка **«Скопировать выбранные»** → `adb pull <remote> <local>`  
+ • Кнопка **«Скопировать выбранные»** → `adb pull <remote> <local>`
    (пользователь выбирает папку‑назначение на ПК, сохраняется относительная
    структура каталогов).
  • Кнопка **«Обновить список»** повторно сканирует устройство.
@@ -21,15 +21,25 @@ device_cleanup – плагин для поиска и очистки «тяжё
 
 import os
 import subprocess
+import shlex
 import threading
 
-from PyQt6.QtCore import Qt, QTimer, QSize
-from PyQt6.QtGui import QIcon
+from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
-    QTableWidget, QTableWidgetItem, QHeaderView,
-    QFileDialog, QMessageBox, QProgressBar, QCheckBox,
+    QWidget,
+    QVBoxLayout,
+    QHBoxLayout,
+    QLabel,
+    QPushButton,
+    QTableWidget,
+    QTableWidgetItem,
+    QHeaderView,
+    QFileDialog,
+    QMessageBox,
+    QProgressBar,
+    QCheckBox,
 )
+
 
 # ----------------------------------------------------------------------
 #   Вспомогательные функции
@@ -46,7 +56,9 @@ def _run_adb(main_window, cmd: str) -> str:
     )
     try:
         out = subprocess.check_output(
-            [adb] + cmd.split(),
+            main_window.build_adb_args(cmd, main_window.get_selected_device_id())
+            if hasattr(main_window, "build_adb_args")
+            else [adb] + shlex.split(cmd),
             text=True,
             timeout=15,
         )
@@ -58,7 +70,7 @@ def _run_adb(main_window, cmd: str) -> str:
 
 def _human_readable_size(bytes_cnt: int) -> str:
     """Преобразует количество байт в строку вида «X.Y GB»."""
-    GB = 1024 ** 3
+    GB = 1024**3
     return f"{bytes_cnt / GB:.2f} GB"
 
 
@@ -74,7 +86,7 @@ class ScanThread(threading.Thread):
     def __init__(self, main_window):
         super().__init__(daemon=True)
         self.main_window = main_window
-        self.result = []          # список кортежей (path, size_bytes)
+        self.result = []  # список кортежей (path, size_bytes)
         self._stop = False
 
     def run(self):
@@ -85,7 +97,9 @@ class ScanThread(threading.Thread):
 
         if not out:
             # Возможно, нет доступа к /storage, пробуем корневой каталог.
-            self.main_window.log_message("[Cleanup] Поиск в /storage не дал результатов, пробуем /")
+            self.main_window.log_message(
+                "[Cleanup] Поиск в /storage не дал результатов, пробуем /"
+            )
             find_cmd = "shell find / -type f -size +2147483648c"
             out = _run_adb(self.main_window, find_cmd)
 
@@ -133,9 +147,13 @@ def register(main_window):
     table = QTableWidget()
     table.setColumnCount(3)
     table.setHorizontalHeaderLabels(["", "Путь", "Размер"])
-    table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
+    table.horizontalHeader().setSectionResizeMode(
+        0, QHeaderView.ResizeMode.ResizeToContents
+    )
     table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
-    table.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.ResizeToContents)
+    table.horizontalHeader().setSectionResizeMode(
+        2, QHeaderView.ResizeMode.ResizeToContents
+    )
     table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
     layout.addWidget(table)
 
@@ -144,7 +162,7 @@ def register(main_window):
     # --------------------------------------------------------------
     actions_layout = QHBoxLayout()
     btn_delete = QPushButton("Удалить выбранные")
-    btn_pull   = QPushButton("Скопировать выбранные")
+    btn_pull = QPushButton("Скопировать выбранные")
     actions_layout.addWidget(btn_delete)
     actions_layout.addWidget(btn_pull)
     actions_layout.addStretch()
@@ -160,7 +178,7 @@ def register(main_window):
     # --------------------------------------------------------------
     #   Внутренние функции
     # --------------------------------------------------------------
-    scan_thread = None   # будет хранить текущий ScanThread
+    scan_thread = None  # будет хранить текущий ScanThread
 
     def populate_table(file_list):
         """Заполняем QTableWidget элементами из file_list [(path, size_bytes), …]."""
@@ -182,7 +200,9 @@ def register(main_window):
             # Размер человеко‑читаемый
             size_str = _human_readable_size(size) if size else "—"
             item_size = QTableWidgetItem(size_str)
-            item_size.setTextAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+            item_size.setTextAlignment(
+                Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter
+            )
             item_size.setFlags(item_size.flags() ^ Qt.ItemFlag.ItemIsEditable)
             table.setItem(row, 2, item_size)
 
@@ -196,7 +216,7 @@ def register(main_window):
 
         table.setRowCount(0)
         progress.setValue(0)
-        progress.setMaximum(0)   # «мувинговый» индикатор
+        progress.setMaximum(0)  # «мувинговый» индикатор
         progress.setVisible(True)
         main_window.log_message("[Cleanup] Старт сканирования > 2 GB…")
 
@@ -211,7 +231,9 @@ def register(main_window):
             else:
                 progress.setVisible(False)
                 populate_table(scan_thread.result)
-                main_window.log_message(f"[Cleanup] Сканирование завершено, найдено {len(scan_thread.result)} файлов.")
+                main_window.log_message(
+                    f"[Cleanup] Сканирование завершено, найдено {len(scan_thread.result)} файлов."
+                )
 
         QTimer.singleShot(500, check_finished)
 
@@ -250,7 +272,7 @@ def register(main_window):
                 continue
             remote_path = path_item.text()
             # Выполняем удаление
-            out = _run_adb(main_window, f'shell rm -f "{remote_path}"')
+            _run_adb(main_window, f'shell rm -f "{remote_path}"')
             main_window.log_message(f"[Cleanup] Удалён: {remote_path}")
             # Убираем строку из таблицы
             table.removeRow(row)
@@ -283,13 +305,15 @@ def register(main_window):
 
             # Формируем локальный путь, сохраняя иерархию после корня
             # Убираем начальный «/», затем создаём подпапки в dest_dir.
-            rel_path = remote_path.lstrip("/")          # например, storage/emulated/0/Movies/Big.mkv
+            rel_path = remote_path.lstrip(
+                "/"
+            )  # например, storage/emulated/0/Movies/Big.mkv
             local_path = os.path.join(dest_dir, rel_path)
             os.makedirs(os.path.dirname(local_path), exist_ok=True)
 
             # Выполняем `adb pull`
             main_window.log_message(f"[Cleanup] Копируем {remote_path} → {local_path}")
-            out = _run_adb(main_window, f'pull "{remote_path}" "{local_path}"')
+            _run_adb(main_window, f'pull "{remote_path}" "{local_path}"')
             main_window.log_message(f"[Cleanup] Скопировано: {remote_path}")
 
         QMessageBox.information(
@@ -304,4 +328,6 @@ def register(main_window):
     #   Добавляем вкладку в главное окно
     # --------------------------------------------------------------
     main_window.tabs.addTab(tab, "Очистка устройства")
-    main_window.log_message("[Cleanup] Плагин загружен – вкладка «Очистка устройства» добавлена.")
+    main_window.log_message(
+        "[Cleanup] Плагин загружен – вкладка «Очистка устройства» добавлена."
+    )

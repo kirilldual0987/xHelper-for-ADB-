@@ -19,11 +19,14 @@ type_text_on_device – плагин для xHelper.
 """
 
 import subprocess
-import re
-from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import (
-    QWidget, QVBoxLayout, QLabel, QTextEdit,
-    QPushButton, QMessageBox, QHBoxLayout
+    QWidget,
+    QVBoxLayout,
+    QLabel,
+    QTextEdit,
+    QPushButton,
+    QMessageBox,
+    QHBoxLayout,
 )
 
 
@@ -35,10 +38,10 @@ def _send_text_via_adb(main_window, raw_text: str):
     Преобразует произвольный текст в форму, пригодную для команды
     `adb shell input text`, и отправляет её.
 
-    1) Пробелы → %s (требуется ADB).  
+    1) Пробелы → %s (требуется ADB).
     2) Удаляем только кавычки – они могут спровоцировать ошибки в
        командной строке.  Русские буквы и любые другие Unicode‑символы
-       оставляем без изменений (adb передаёт их в UTF‑8).  
+       оставляем без изменений (adb передаёт их в UTF‑8).
     3) После ввода посылаем клавишу Enter (KEYCODE_ENTER) – удобно,
        когда нужно «подтвердить» ввод.
 
@@ -51,10 +54,10 @@ def _send_text_via_adb(main_window, raw_text: str):
 
     # Удаляем одинарные и двойные кавычки – они могут «сломать» команду.
     # Важно НЕ удалять русские буквы и другие Unicode‑символы.
-    text = text.replace("'", "").replace('"', '')
+    text = text.replace("'", "").replace('"', "")
 
     # Пробелы → %s (ADB‑правило)
-    text = text.replace(' ', '%s')
+    text = text.replace(" ", "%s")
 
     if not text:
         main_window.log_message("[Keyboard] Пустой ввод – ничего не отправлено")
@@ -76,31 +79,23 @@ def _send_text_via_adb(main_window, raw_text: str):
             capture_output=True,
             text=True,
             timeout=7,
-            check=True      # бросит исключение, если код выхода != 0
+            check=True,  # бросит исключение, если код выхода != 0
         )
         main_window.log_message(f"[Keyboard] Текст отправлен: {raw_text}")
     except subprocess.CalledProcessError as e:
         main_window.log_message(f"[Keyboard] Ошибка adb: {e.stderr or e}")
         QMessageBox.critical(
-            None,
-            "ADB‑ошибка",
-            f"Не удалось отправить текст.\n\n{e.stderr or e}"
+            None, "ADB‑ошибка", f"Не удалось отправить текст.\n\n{e.stderr or e}"
         )
         return
     except Exception as exc:
         main_window.log_message(f"[Keyboard] Неожиданное исключение: {exc}")
-        QMessageBox.critical(
-            None,
-            "Ошибка",
-            f"Не удалось отправить текст.\n\n{exc}"
-        )
+        QMessageBox.critical(None, "Ошибка", f"Не удалось отправить текст.\n\n{exc}")
         return
     else:
         # По желанию сразу нажимаем Enter (KEYCODE_ENTER = 66)
         subprocess.run(
-            [adb, "shell", "input", "keyevent", "66"],
-            capture_output=True,
-            text=True
+            [adb, "shell", "input", "keyevent", "66"], capture_output=True, text=True
         )
 
 
@@ -130,9 +125,7 @@ def register(main_window):
 
     # Текстовое поле
     txt_edit = QTextEdit()
-    txt_edit.setPlaceholderText(
-        "Введите здесь русский или любой другой текст..."
-    )
+    txt_edit.setPlaceholderText("Введите здесь русский или любой другой текст...")
     txt_edit.setMaximumHeight(200)
     layout.addWidget(txt_edit)
 
@@ -167,4 +160,6 @@ def register(main_window):
 
     # --------------------- Добавляем во вкладки ---------------------
     main_window.tabs.addTab(tab, "Клавиатура")
-    main_window.log_message("[Keyboard] Плагин загружен – вкладка «Клавиатура» добавлена.")
+    main_window.log_message(
+        "[Keyboard] Плагин загружен – вкладка «Клавиатура» добавлена."
+    )

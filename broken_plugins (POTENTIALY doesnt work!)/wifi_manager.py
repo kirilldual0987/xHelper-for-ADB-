@@ -10,17 +10,32 @@ wifi_manager – простое управление Wi‑Fi на Android‑ус
 """
 
 import subprocess
+import shlex
 from PyQt6.QtWidgets import (
-    QWidget, QVBoxLayout, QLabel, QPushButton,
-    QMessageBox, QHBoxLayout
+    QWidget,
+    QVBoxLayout,
+    QLabel,
+    QPushButton,
+    QMessageBox,
+    QHBoxLayout,
 )
-from PyQt6.QtCore import Qt, QTimer
+from PyQt6.QtCore import QTimer
 
 
 def _run_adb(main_window, cmd):
-    adb = main_window.settings.get("adb_path", "adb") if hasattr(main_window, "settings") else "adb"
+    adb = (
+        main_window.settings.get("adb_path", "adb")
+        if hasattr(main_window, "settings")
+        else "adb"
+    )
     try:
-        out = subprocess.check_output([adb] + cmd.split(), text=True, timeout=5)
+        out = subprocess.check_output(
+            main_window.build_adb_args(cmd, main_window.get_selected_device_id())
+            if hasattr(main_window, "build_adb_args")
+            else [adb] + shlex.split(cmd),
+            text=True,
+            timeout=5,
+        )
         return out
     except Exception as e:
         main_window.log_message(f"[Wi‑Fi] Ошибка adb: {e}")
@@ -33,14 +48,14 @@ def register(main_window):
 
     # ------------------- Статус -------------------
     status_lbl = QLabel("Статус: неизвестно")
-    ssid_lbl   = QLabel("SSID: —")
+    ssid_lbl = QLabel("SSID: —")
     vbox.addWidget(status_lbl)
     vbox.addWidget(ssid_lbl)
 
     # ------------------- Кнопки -------------------
     btn_layout = QHBoxLayout()
     btn_toggle = QPushButton("Включить Wi‑Fi")
-    btn_open   = QPushButton("Открыть настройки Wi‑Fi")
+    btn_open = QPushButton("Открыть настройки Wi‑Fi")
     btn_layout.addWidget(btn_toggle)
     btn_layout.addWidget(btn_open)
     vbox.addLayout(btn_layout)
@@ -88,12 +103,12 @@ def register(main_window):
     #   Открыть системные настройки Wi‑Fi
     # --------------------------------------------------------------
     def open_wifi_settings():
-        _run_adb(main_window,
-                 "shell am start -a android.settings.WIFI_SETTINGS")
-        QMessageBox.information(tab,
-                                "Wi‑Fi",
-                                "Открыты системные настройки Wi‑Fi.\n"
-                                "Закройте их, когда закончите.")
+        _run_adb(main_window, "shell am start -a android.settings.WIFI_SETTINGS")
+        QMessageBox.information(
+            tab,
+            "Wi‑Fi",
+            "Открыты системные настройки Wi‑Fi.\nЗакройте их, когда закончите.",
+        )
 
     btn_open.clicked.connect(open_wifi_settings)
 

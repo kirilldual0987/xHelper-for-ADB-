@@ -12,23 +12,26 @@ USB Tethering Manager – плагин для включения/выключе�
 - Логирование операций
 """
 
-
 import subprocess
-from PyQt6.QtWidgets import (
-    QWidget, QVBoxLayout, QLabel, QPushButton, QMessageBox
-)
+import shlex
+from PyQt6.QtWidgets import QWidget, QVBoxLayout, QLabel, QPushButton
 from PyQt6.QtCore import Qt
-
 
 
 def _run_adb(main_window, cmd):
     """Выполнение ADB‑команды с обработкой ошибок."""
-    adb = main_window.settings.get("adb_path", "adb") if hasattr(main_window, "settings") else "adb"
+    adb = (
+        main_window.settings.get("adb_path", "adb")
+        if hasattr(main_window, "settings")
+        else "adb"
+    )
     try:
         out = subprocess.check_output(
-            [adb] + cmd.split(),
+            main_window.build_adb_args(cmd, main_window.get_selected_device_id())
+            if hasattr(main_window, "build_adb_args")
+            else [adb] + shlex.split(cmd),
             text=True,
-            timeout=5
+            timeout=5,
         )
         return out.strip()
     except Exception as e:
@@ -51,12 +54,13 @@ def _set_tethering(main_window, enable):
         cmd += " rndis,diag,adb'"
     else:
         cmd += " mtp,adb'"
-    
+
     result = _run_adb(main_window, cmd)
     if result is not None:
         main_window.log_message(
             f"[USB Tethering] Режим {'включён' if enable else 'выключен'}"
         )
+
 
 def register(main_window):
     """Регистрация плагина в главном окне."""
@@ -68,7 +72,6 @@ def register(main_window):
     title = QLabel("<h2>USB‑модем</h2>")
     title.setAlignment(Qt.AlignmentFlag.AlignCenter)
     layout.addWidget(title)
-
 
     # Статус подключения
     status_label = QLabel("Статус: проверяется...")
@@ -83,16 +86,13 @@ def register(main_window):
     desc.setWordWrap(True)
     layout.addWidget(desc)
 
-
     # Кнопка управления
     toggle_btn = QPushButton("Включить USB‑модем")
     toggle_btn.setStyleSheet("padding: 10px;")
     layout.addWidget(toggle_btn)
 
-
     # Пространство для выравнивания
     layout.addStretch()
-
 
     # --- Логика работы ---
     def update_status():
@@ -112,7 +112,6 @@ def register(main_window):
 
     # Связываем события
     toggle_btn.clicked.connect(toggle_tethering)
-
 
     # Первоначальная проверка статуса
     update_status()

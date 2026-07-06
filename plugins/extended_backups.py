@@ -8,7 +8,7 @@
  • системные приложения (требует root‑доступ);
  • полное резервирование (как в штатной вкладке «Бэкап / Восстановление»).
 
-Работает в составе xHelper alpha 1.0.1 LTS/ATS (или любой более новой
+Работает в составе xHelper 2.0 Release (или любой более новой
 версии, где присутствует механизм загрузки плагинов).
 """
 
@@ -19,11 +19,19 @@ import zipfile
 from datetime import datetime
 from pathlib import Path
 
-from PyQt6.QtCore import Qt, QThread, pyqtSignal
+from PyQt6.QtCore import QThread, pyqtSignal
 from PyQt6.QtWidgets import (
-    QWidget, QVBoxLayout, QGroupBox, QCheckBox, QPushButton,
-    QLineEdit, QLabel, QFileDialog, QMessageBox,
-    QProgressBar, QHBoxLayout
+    QWidget,
+    QVBoxLayout,
+    QGroupBox,
+    QCheckBox,
+    QPushButton,
+    QLineEdit,
+    QLabel,
+    QFileDialog,
+    QMessageBox,
+    QProgressBar,
+    QHBoxLayout,
 )
 
 
@@ -32,9 +40,10 @@ from PyQt6.QtWidgets import (
 # ----------------------------------------------------------------------
 class BackupWorker(QThread):
     """Выполняет выбранные пользователем операции резервирования."""
-    log_signal      = pyqtSignal(str)   # сообщения, которые будут идти в консоль
-    progress_signal = pyqtSignal(int)   # обновление прогресса
-    finished_signal = pyqtSignal()      # сигнал завершения
+
+    log_signal = pyqtSignal(str)  # сообщения, которые будут идти в консоль
+    progress_signal = pyqtSignal(int)  # обновление прогресса
+    finished_signal = pyqtSignal()  # сигнал завершения
 
     def __init__(self, main_window, dest_dir: str, opts: dict):
         """
@@ -47,7 +56,7 @@ class BackupWorker(QThread):
         self.dest_dir = Path(dest_dir)
         self.opts = opts
         self.adb = self.main.settings.get("adb_path", "adb")
-        self.steps = self._count_steps()          # количество шагов для шкалы прогресса
+        self.steps = self._count_steps()  # количество шагов для шкалы прогресса
         self.current_step = 0
 
     # ------------------------------------------------------------------
@@ -97,11 +106,11 @@ class BackupWorker(QThread):
                 cmd = [
                     self.adb,
                     "backup",
-                    "-apk",          # включаем apk‑файлы
-                    "-shared",       # включаем данные sdcard
-                    "-all",          # все пакеты
+                    "-apk",  # включаем apk‑файлы
+                    "-shared",  # включаем данные sdcard
+                    "-all",  # все пакеты
                     "-f",
-                    str(full_path)
+                    str(full_path),
                 ]
                 subprocess.run(cmd, check=True)
                 self._log(f"[Backup] Полный бэкап сохранён в {full_path}")
@@ -121,7 +130,7 @@ class BackupWorker(QThread):
             if self.opts.get("photos"):
                 self._log("[Backup] Копируем фото (DCIM)…")
                 remote = "/sdcard/DCIM"
-                local  = temp_dir / "DCIM"
+                local = temp_dir / "DCIM"
                 subprocess.run([self.adb, "pull", remote, str(local)], check=True)
                 self._log("[Backup] Фото скопированы")
                 self._step()
@@ -132,7 +141,7 @@ class BackupWorker(QThread):
             if self.opts.get("videos"):
                 self._log("[Backup] Копируем видео (Movies)…")
                 remote = "/sdcard/Movies"
-                local  = temp_dir / "Movies"
+                local = temp_dir / "Movies"
                 subprocess.run([self.adb, "pull", remote, str(local)], check=True)
                 self._log("[Backup] Видео скопированы")
                 self._step()
@@ -145,7 +154,9 @@ class BackupWorker(QThread):
                 for remote_dir in ("/sdcard/Download", "/sdcard/Documents"):
                     name = Path(remote_dir).name
                     local = temp_dir / name
-                    subprocess.run([self.adb, "pull", remote_dir, str(local)], check=True)
+                    subprocess.run(
+                        [self.adb, "pull", remote_dir, str(local)], check=True
+                    )
                 self._log("[Backup] Документы скопированы")
                 self._step()
 
@@ -155,12 +166,13 @@ class BackupWorker(QThread):
             if self.opts.get("user_apps"):
                 self._log("[Backup] Получаем список пользовательских пакетов…")
                 out = subprocess.check_output(
-                    [self.adb, "shell", "pm", "list", "packages", "-3"],
-                    text=True
+                    [self.adb, "shell", "pm", "list", "packages", "-3"], text=True
                 )
-                packages = [line.replace("package:", "").strip()
-                            for line in out.splitlines()
-                            if line.strip()]
+                packages = [
+                    line.replace("package:", "").strip()
+                    for line in out.splitlines()
+                    if line.strip()
+                ]
                 self._log(f"[Backup] Найдено пользовательских пакетов: {len(packages)}")
                 apps_dir = temp_dir / "user_apps"
                 apps_dir.mkdir(parents=True, exist_ok=True)
@@ -170,11 +182,11 @@ class BackupWorker(QThread):
                     cmd = [
                         self.adb,
                         "backup",
-                        "-apk",          # включаем .apk
-                        "-noobb",        # без OBB (необязательно)
+                        "-apk",  # включаем .apk
+                        "-noobb",  # без OBB (необязательно)
                         "-f",
                         str(out_path),
-                        pkg
+                        pkg,
                     ]
                     subprocess.run(cmd, check=True)
                 self._log("[Backup] Пользовательские приложения сохранены")
@@ -186,25 +198,28 @@ class BackupWorker(QThread):
             if self.opts.get("system_apps"):
                 self._log("[Backup] Получаем список системных пакетов…")
                 out = subprocess.check_output(
-                    [self.adb, "shell", "pm", "list", "packages", "-s"],
-                    text=True
+                    [self.adb, "shell", "pm", "list", "packages", "-s"], text=True
                 )
-                packages = [line.replace("package:", "").strip()
-                            for line in out.splitlines()
-                            if line.strip()]
+                packages = [
+                    line.replace("package:", "").strip()
+                    for line in out.splitlines()
+                    if line.strip()
+                ]
                 self._log(f"[Backup] Найдено системных пакетов: {len(packages)}")
                 sys_dir = temp_dir / "system_apps"
                 sys_dir.mkdir(parents=True, exist_ok=True)
                 for idx, pkg in enumerate(packages, start=1):
-                    self._log(f"[Backup] Бэкап системного пакета {idx}/{len(packages)}: {pkg}")
+                    self._log(
+                        f"[Backup] Бэкап системного пакета {idx}/{len(packages)}: {pkg}"
+                    )
                     out_path = sys_dir / f"{pkg}_{timestamp}.ab"
                     cmd = [
                         self.adb,
                         "backup",
-                        "-noapk",       # без .apk – системные обычно менять нельзя
+                        "-noapk",  # без .apk – системные обычно менять нельзя
                         "-f",
                         str(out_path),
-                        pkg
+                        pkg,
                     ]
                     subprocess.run(cmd, check=True)
                 self._log("[Backup] Системные приложения сохранены")
@@ -238,7 +253,9 @@ class BackupWorker(QThread):
                     shutil.rmtree(temp_dir)
                     self._log("[Backup] Удалена временная папка")
                 except Exception as e_cleanup:
-                    self._log(f"[Backup][WARN] Не удалось удалить temp‑dir: {e_cleanup}")
+                    self._log(
+                        f"[Backup][WARN] Не удалось удалить temp‑dir: {e_cleanup}"
+                    )
 
             # ------------------------------------------------------------------
             #   Сигналы о завершении
@@ -264,16 +281,22 @@ def register(main_window):
     group = QGroupBox("Что резервировать")
     grp_layout = QVBoxLayout(group)
 
-    cb_photos       = QCheckBox("Фотографии ( /sdcard/DCIM )")
-    cb_videos       = QCheckBox("Видео ( /sdcard/Movies )")
-    cb_documents    = QCheckBox("Документы ( /sdcard/Download, /sdcard/Documents )")
-    cb_user_apps    = QCheckBox("Пользовательские приложения")
-    cb_system_apps  = QCheckBox("Системные приложения (требует root)")
-    cb_full         = QCheckBox("Полный бэкап (как в штатной вкладке)")
+    cb_photos = QCheckBox("Фотографии ( /sdcard/DCIM )")
+    cb_videos = QCheckBox("Видео ( /sdcard/Movies )")
+    cb_documents = QCheckBox("Документы ( /sdcard/Download, /sdcard/Documents )")
+    cb_user_apps = QCheckBox("Пользовательские приложения")
+    cb_system_apps = QCheckBox("Системные приложения (требует root)")
+    cb_full = QCheckBox("Полный бэкап (как в штатной вкладке)")
 
     # по умолчанию чеков нет – пользователь выбирает явно
-    for w in (cb_photos, cb_videos, cb_documents,
-              cb_user_apps, cb_system_apps, cb_full):
+    for w in (
+        cb_photos,
+        cb_videos,
+        cb_documents,
+        cb_user_apps,
+        cb_system_apps,
+        cb_full,
+    ):
         grp_layout.addWidget(w)
 
     # ----- Путь назначения -----------------------------------------
@@ -310,16 +333,18 @@ def register(main_window):
     # ------------------------------------------------------------------
     def start_backup():
         # validation ----------------------------------------------------
-        if not any((cb_photos.isChecked(),
-                    cb_videos.isChecked(),
-                    cb_documents.isChecked(),
-                    cb_user_apps.isChecked(),
-                    cb_system_apps.isChecked(),
-                    cb_full.isChecked())):
+        if not any(
+            (
+                cb_photos.isChecked(),
+                cb_videos.isChecked(),
+                cb_documents.isChecked(),
+                cb_user_apps.isChecked(),
+                cb_system_apps.isChecked(),
+                cb_full.isChecked(),
+            )
+        ):
             QMessageBox.warning(
-                tab,
-                "Внимание",
-                "Выберите хотя бы одну опцию для резервирования"
+                tab, "Внимание", "Выберите хотя бы одну опцию для резервирования"
             )
             return
 
@@ -330,12 +355,12 @@ def register(main_window):
 
         # создаём словарь опций -----------------------------------------
         opts = {
-            "photos"       : cb_photos.isChecked(),
-            "videos"       : cb_videos.isChecked(),
-            "documents"    : cb_documents.isChecked(),
-            "user_apps"    : cb_user_apps.isChecked(),
-            "system_apps"  : cb_system_apps.isChecked(),
-            "full_backup"  : cb_full.isChecked()
+            "photos": cb_photos.isChecked(),
+            "videos": cb_videos.isChecked(),
+            "documents": cb_documents.isChecked(),
+            "user_apps": cb_user_apps.isChecked(),
+            "system_apps": cb_system_apps.isChecked(),
+            "full_backup": cb_full.isChecked(),
         }
 
         # UI – блокируем элементы, показываем прогресс -----------------
@@ -358,8 +383,7 @@ def register(main_window):
         QMessageBox.information(
             tab,
             "Готово",
-            "Резервное копирование завершено.\n"
-            "Все файлы находятся в выбранной папке."
+            "Резервное копирование завершено.\nВсе файлы находятся в выбранной папке.",
         )
         # корректно завершаем поток (на всякий случай)
         worker_instance.quit()

@@ -16,16 +16,9 @@ gui_enhancer – плагин‑модуль для улучшения внеш�
 все необходимые элементы ищутся динамически.
 """
 
-import os
-import sys
-from pathlib import Path
-
 from PyQt6.QtCore import Qt, QSize
-from PyQt6.QtGui import QIcon, QFont, QAction
-from PyQt6.QtWidgets import (
-    QToolBar, QSplitter, QStyle, QMessageBox,
-    QFontDialog, QProgressBar
-)
+from PyQt6.QtGui import QFont, QAction
+from PyQt6.QtWidgets import QToolBar, QSplitter, QStyle, QMessageBox
 
 
 # ----------------------------------------------------------------------
@@ -162,29 +155,33 @@ def register(main_window):
     # ---------- Refresh devices ----------
     act_refresh = QAction(
         style.standardIcon(QStyle.StandardPixmap.SP_BrowserReload),
-        "Обновить список устройств", main_window
+        "Обновить список устройств",
+        main_window,
     )
     act_refresh.triggered.connect(main_window.get_devices)
     toolbar.addAction(act_refresh)
 
     # ---------- Logcat ----------
     # Ищем вкладку Logcat по заголовку, если прямой ссылки нет
-    logcat_tab = getattr(main_window, "logcat_tab", None) or \
-                 _find_tab_by_title(main_window, "Логи")
+    logcat_tab = getattr(main_window, "logcat_tab", None) or _find_tab_by_title(
+        main_window, "Логи"
+    )
     act_logcat = QAction(
         style.standardIcon(QStyle.StandardPixmap.SP_FileDialogDetailedView),
-        "Logcat", main_window
+        "Logcat",
+        main_window,
     )
     if logcat_tab:
-        act_logcat.triggered.connect(lambda: main_window.tabs.setCurrentWidget(logcat_tab))
+        act_logcat.triggered.connect(
+            lambda: main_window.tabs.setCurrentWidget(logcat_tab)
+        )
     else:
         act_logcat.setEnabled(False)
     toolbar.addAction(act_logcat)
 
     # ---------- Scrcpy (toggle) ----------
     act_scrcpy = QAction(
-        style.standardIcon(QStyle.StandardPixmap.SP_MediaPlay),
-        "Scrcpy", main_window
+        style.standardIcon(QStyle.StandardPixmap.SP_MediaPlay), "Scrcpy", main_window
     )
     act_scrcpy.setCheckable(True)
 
@@ -197,8 +194,9 @@ def register(main_window):
                 )
                 act_scrcpy.setText("Stop Scrcpy")
             else:
-                QMessageBox.warning(main_window, "Ошибка",
-                                    "Метод start_screen_stream() не найден")
+                QMessageBox.warning(
+                    main_window, "Ошибка", "Метод start_screen_stream() не найден"
+                )
                 act_scrcpy.setChecked(False)
         else:
             if hasattr(main_window, "stop_screen_stream"):
@@ -208,36 +206,45 @@ def register(main_window):
                 )
                 act_scrcpy.setText("Scrcpy")
             else:
-                QMessageBox.warning(main_window, "Ошибка",
-                                    "Метод stop_screen_stream() не найден")
+                QMessageBox.warning(
+                    main_window, "Ошибка", "Метод stop_screen_stream() не найден"
+                )
                 act_scrcpy.setChecked(True)
 
     act_scrcpy.toggled.connect(_toggle_scrcpy)
     toolbar.addAction(act_scrcpy)
 
     # ---------- Backup / Restore ----------
-    backup_tab = _find_tab_by_title(main_window, "Бэкап / Восстановление") or \
-                 _find_tab_by_title(main_window, "Backup / Restore")
+    backup_tab = _find_tab_by_title(
+        main_window, "Бэкап / Восстановление"
+    ) or _find_tab_by_title(main_window, "Backup / Restore")
     act_backup = QAction(
         # В Qt6 правильный элемент – SP_DriveHDIcon (не SP_DriveFD)
         style.standardIcon(QStyle.StandardPixmap.SP_DriveHDIcon),
-        "Бэкап / Восстановление", main_window
+        "Бэкап / Восстановление",
+        main_window,
     )
     if backup_tab:
-        act_backup.triggered.connect(lambda: main_window.tabs.setCurrentWidget(backup_tab))
+        act_backup.triggered.connect(
+            lambda: main_window.tabs.setCurrentWidget(backup_tab)
+        )
     else:
         act_backup.setEnabled(False)
     toolbar.addAction(act_backup)
 
     # ---------- Settings ----------
-    settings_tab = _find_tab_by_title(main_window, "Настройки") or \
-                   _find_tab_by_title(main_window, "Settings")
+    settings_tab = _find_tab_by_title(main_window, "Настройки") or _find_tab_by_title(
+        main_window, "Settings"
+    )
     act_settings = QAction(
         style.standardIcon(QStyle.StandardPixmap.SP_DesktopIcon),
-        "Настройки", main_window
+        "Настройки",
+        main_window,
     )
     if settings_tab:
-        act_settings.triggered.connect(lambda: main_window.tabs.setCurrentWidget(settings_tab))
+        act_settings.triggered.connect(
+            lambda: main_window.tabs.setCurrentWidget(settings_tab)
+        )
     else:
         act_settings.setEnabled(False)
     toolbar.addAction(act_settings)
@@ -256,9 +263,9 @@ def register(main_window):
             w.setParent(None)
 
     splitter = QSplitter(Qt.Orientation.Vertical)
-    splitter.setHandleWidth(4)                # более заметный «ползунок»
-    splitter.addWidget(main_window.tabs)      # сверху – набор табов
-    splitter.addWidget(main_window.console)   # снизу – консоль‑лог
+    splitter.setHandleWidth(4)  # более заметный «ползунок»
+    splitter.addWidget(main_window.tabs)  # сверху – набор табов
+    splitter.addWidget(main_window.console)  # снизу – консоль‑лог
 
     # 70 % / 30 % по умолчанию
     total_h = main_window.height() if main_window.height() > 0 else 800
@@ -292,4 +299,4 @@ def register(main_window):
     # 6️⃣  Сохраняем ссылки для возможного дальнейшего использования
     # --------------------------------------------------------------
     main_window.enhanced_splitter = splitter
-    main_window.enhanced_toolbar  = toolbar
+    main_window.enhanced_toolbar = toolbar

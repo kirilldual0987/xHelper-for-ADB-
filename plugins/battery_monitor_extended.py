@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Battery Monitor plugin for xHelper α‑1.0.1.
+Battery Monitor plugin for xHelper 2.0 Release.
 
 Adds a dock widget that shows:
   • Battery level (progress bar)
@@ -15,8 +15,12 @@ main_window.log_message().
 
 import subprocess
 from PyQt6.QtWidgets import (
-    QDockWidget, QWidget, QVBoxLayout, QLabel,
-    QProgressBar, QPushButton
+    QDockWidget,
+    QWidget,
+    QVBoxLayout,
+    QLabel,
+    QProgressBar,
+    QPushButton,
 )
 from PyQt6.QtCore import Qt, QTimer
 
@@ -31,23 +35,25 @@ def _parse_battery_output(output: str) -> dict:
     """
     data = {}
     for line in output.splitlines():
-        if ':' not in line:
+        if ":" not in line:
             continue
-        key, val = line.split(':', 1)
+        key, val = line.split(":", 1)
         data[key.strip().lower()] = val.strip()
 
     # Приводим к нужным типам (если что‑то не найдено – ставим -1)
-    level = int(data.get('level', -1))
-    voltage = int(data.get('voltage', -1)) // 1000 if data.get('voltage') else -1
+    level = int(data.get("level", -1))
+    voltage = int(data.get("voltage", -1)) // 1000 if data.get("voltage") else -1
     # temperature в 0.1 °C → делим на 10
-    temperature = int(data.get('temperature', -1)) / 10 if data.get('temperature') else -1
-    status = data.get('status', 'UNKNOWN')
+    temperature = (
+        int(data.get("temperature", -1)) / 10 if data.get("temperature") else -1
+    )
+    status = data.get("status", "UNKNOWN")
 
     return {
-        'level': level,
-        'voltage': voltage,
-        'temperature': temperature,
-        'status': status,
+        "level": level,
+        "voltage": voltage,
+        "temperature": temperature,
+        "status": status,
     }
 
 
@@ -58,12 +64,13 @@ def _fetch_battery(main_window) -> dict:
     """
     # Путь к adb может быть переопределён в настройках xHelper
     adb = (
-        main_window.settings.get('adb_path', 'adb')
-        if hasattr(main_window, 'settings') else 'adb'
+        main_window.settings.get("adb_path", "adb")
+        if hasattr(main_window, "settings")
+        else "adb"
     )
     try:
         out = subprocess.check_output(
-            [adb, 'shell', 'dumpsys', 'battery'],
+            [adb, "shell", "dumpsys", "battery"],
             text=True,
             timeout=5,
         )
@@ -82,33 +89,33 @@ def _update_ui(main_window, widgets: dict):
     if not data:
         return
 
-    level = data['level']
-    voltage = data['voltage']
-    temp = data['temperature']
-    status = data['status']
+    level = data["level"]
+    voltage = data["voltage"]
+    temp = data["temperature"]
+    status = data["status"]
 
     # ‑‑‑ progress bar
-    widgets['progress'].setValue(level)
+    widgets["progress"].setValue(level)
     # ‑‑‑ цветовая индикация
     if level >= 80:
-        color = "#4caf50"      # зелёный
+        color = "#4caf50"  # зелёный
     elif level >= 30:
-        color = "#ffeb3b"      # жёлтый
+        color = "#ffeb3b"  # жёлтый
     else:
-        color = "#f44336"      # красный
-    widgets['progress'].setStyleSheet(
+        color = "#f44336"  # красный
+    widgets["progress"].setStyleSheet(
         f"QProgressBar::chunk {{background-color: {color};}}"
     )
 
     # ‑‑‑ текстовые метки
-    widgets['lbl_level'].setText(f"Уровень: {level}%")
-    widgets['lbl_voltage'].setText(
+    widgets["lbl_level"].setText(f"Уровень: {level}%")
+    widgets["lbl_voltage"].setText(
         f"Напряжение: {voltage} V" if voltage != -1 else "Напряжение: —"
     )
-    widgets['lbl_temp'].setText(
+    widgets["lbl_temp"].setText(
         f"Температура: {temp:.1f} °C" if temp != -1 else "Температура: —"
     )
-    widgets['lbl_status'].setText(f"Состояние: {status}")
+    widgets["lbl_status"].setText(f"Состояние: {status}")
 
 
 # ----------------------------------------------------------------------
@@ -121,9 +128,7 @@ def register(main_window):
     """
     # === UI ------------------------------------------------------------
     battdock = QDockWidget("Battery Monitor", main_window)
-    battdock.setAllowedAreas(
-        Qt.DockWidgetArea.AllDockWidgetAreas
-    )
+    battdock.setAllowedAreas(Qt.DockWidgetArea.AllDockWidgetAreas)
 
     # контейнер‑виджет внутри dock
     container = QWidget()
@@ -138,17 +143,15 @@ def register(main_window):
     progress.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
     # – метки
-    lbl_level   = QLabel("Уровень: —")
+    lbl_level = QLabel("Уровень: —")
     lbl_voltage = QLabel("Напряжение: —")
-    lbl_temp    = QLabel("Температура: —")
-    lbl_status  = QLabel("Состояние: —")
+    lbl_temp = QLabel("Температура: —")
+    lbl_status = QLabel("Состояние: —")
 
     # – кнопка ручного обновления
     btn_refresh = QPushButton("Обновить сейчас")
     # клик → мгновенное обновление
-    btn_refresh.clicked.connect(
-        lambda: _update_ui(main_window, widgets)
-    )
+    btn_refresh.clicked.connect(lambda: _update_ui(main_window, widgets))
 
     # собрать все элементы
     vbox.addWidget(progress)
@@ -165,16 +168,16 @@ def register(main_window):
 
     # сохраняем ссылки, чтобы таймер мог их использовать
     widgets = {
-        'progress':   progress,
-        'lbl_level':  lbl_level,
-        'lbl_voltage': lbl_voltage,
-        'lbl_temp':    lbl_temp,
-        'lbl_status':  lbl_status,
+        "progress": progress,
+        "lbl_level": lbl_level,
+        "lbl_voltage": lbl_voltage,
+        "lbl_temp": lbl_temp,
+        "lbl_status": lbl_status,
     }
 
     # === Таймер обновления (30 сек.) ================================
     timer = QTimer(main_window)
-    timer.setInterval(30_000)           # 30 000 мс = 30 сек.
+    timer.setInterval(30_000)  # 30 000 мс = 30 сек.
     timer.timeout.connect(lambda: _update_ui(main_window, widgets))
     timer.start()
 
@@ -182,4 +185,6 @@ def register(main_window):
     _update_ui(main_window, widgets)
 
     # Информируем пользователя в основной лог
-    main_window.log_message("[BatteryMonitor] Плагин загружен, авто‑обновление каждые 30 сек.")
+    main_window.log_message(
+        "[BatteryMonitor] Плагин загружен, авто‑обновление каждые 30 сек."
+    )

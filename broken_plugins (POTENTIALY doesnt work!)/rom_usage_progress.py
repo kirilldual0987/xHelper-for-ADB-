@@ -4,7 +4,7 @@
 """
 rom_usage_progress – плагин для xHelper.
 
-Добавляет в меню «Инструменты» пункт «ROM‑Usage».  
+Добавляет в меню «Инструменты» пункт «ROM‑Usage».
 При открытии показывается диалог с QProgressBar, в котором:
     • отображается процент занятого места (ROM);
     • цвет полоски плавно меняется от зелёного → жёлтого → красного
@@ -16,11 +16,16 @@ rom_usage_progress – плагин для xHelper.
 
 import re
 import subprocess
+import shlex
 from PyQt6.QtCore import Qt, QTimer
-from PyQt6.QtGui import QColor
 from PyQt6.QtWidgets import (
-    QDialog, QVBoxLayout, QLabel, QProgressBar,
-    QPushButton, QMessageBox, QMenu, QAction
+    QDialog,
+    QVBoxLayout,
+    QLabel,
+    QProgressBar,
+    QPushButton,
+    QMenu,
+    QAction,
 )
 
 
@@ -39,7 +44,9 @@ def _run_adb(main_window, cmd: str) -> str:
     )
     try:
         out = subprocess.check_output(
-            [adb] + cmd.split(),
+            main_window.build_adb_args(cmd, main_window.get_selected_device_id())
+            if hasattr(main_window, "build_adb_args")
+            else [adb] + shlex.split(cmd),
             text=True,
             timeout=7,
         )
@@ -200,7 +207,9 @@ def register(main_window):
     if tools_menu is None:
         # Если по какой‑то причине меню «Инструменты» не найдено,
         # выводим сообщение в лог и завершаем регистрацию.
-        main_window.log_message("[ROM‑Usage] Меню «Инструменты» не найдено, плагин не будет загружен.")
+        main_window.log_message(
+            "[ROM‑Usage] Меню «Инструменты» не найдено, плагин не будет загружен."
+        )
         return
 
     action = QAction("ROM‑Usage", main_window)
@@ -208,4 +217,6 @@ def register(main_window):
     tools_menu.addSeparator()
     tools_menu.addAction(action)
 
-    main_window.log_message("[ROM‑Usage] Плагин загружен – пункт «ROM‑Usage» добавлен в меню «Инструменты».")
+    main_window.log_message(
+        "[ROM‑Usage] Плагин загружен – пункт «ROM‑Usage» добавлен в меню «Инструменты»."
+    )

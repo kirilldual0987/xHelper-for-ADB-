@@ -14,25 +14,29 @@ device_monitor_progress – панель «Монитор (прогресс)».
 """
 
 import subprocess
+import shlex
 import re
-from PyQt6.QtCore import Qt, QTimer
-from PyQt6.QtWidgets import (
-    QWidget, QVBoxLayout, QProgressBar, QLabel,
-    QHBoxLayout, QMessageBox
-)
+from PyQt6.QtCore import QTimer
+from PyQt6.QtWidgets import QWidget, QVBoxLayout, QProgressBar, QLabel, QHBoxLayout
 
 
 def _run_adb(main_window, cmd):
     """Утилита – выполнить команду adb и вернуть stdout."""
-    adb = main_window.settings.get("adb_path", "adb") if hasattr(main_window, "settings") else "adb"
+    adb = (
+        main_window.settings.get("adb_path", "adb")
+        if hasattr(main_window, "settings")
+        else "adb"
+    )
     try:
         out = subprocess.check_output(
-            [adb] + cmd.split(),
+            main_window.build_adb_args(cmd, main_window.get_selected_device_id())
+            if hasattr(main_window, "build_adb_args")
+            else [adb] + shlex.split(cmd),
             text=True,
-            timeout=5
+            timeout=5,
         )
         return out
-    except Exception as e:
+    except Exception:
         return ""
 
 
@@ -57,10 +61,10 @@ def register(main_window):
         layout.addLayout(hb)
         return prog
 
-    cpu_bar      = bar_item("CPU")
-    mem_bar      = bar_item("RAM")
-    bat_bar      = bar_item("Battery")
-    wifi_bar     = bar_item("Wi‑Fi")
+    cpu_bar = bar_item("CPU")
+    mem_bar = bar_item("RAM")
+    bat_bar = bar_item("Battery")
+    wifi_bar = bar_item("Wi‑Fi")
 
     # --------------------------------------------------------------
     #   Функции получения данных
@@ -135,7 +139,7 @@ def register(main_window):
 
     timer.timeout.connect(refresh)
     timer.start()
-    refresh()                     # первый запуск сразу
+    refresh()  # первый запуск сразу
 
     # --------------------------------------------------------------
     #   Добавляем вкладку в главное окно

@@ -6,9 +6,16 @@
 """
 
 from PyQt6.QtWidgets import (
-    QWidget, QVBoxLayout, QGroupBox, QLineEdit,
-    QPushButton, QLabel, QHBoxLayout, QMessageBox
+    QWidget,
+    QVBoxLayout,
+    QGroupBox,
+    QLineEdit,
+    QPushButton,
+    QLabel,
+    QHBoxLayout,
+    QMessageBox,
 )
+
 
 def register(main_window):
     """
@@ -37,7 +44,9 @@ def register(main_window):
             QMessageBox.warning(main_window, "Ошибка", "Введите имя пакета")
             return
         # pm disable‑user работает без root‑прав для пользовательских приложений
-        main_window.run_adb_command(f"shell pm disable-user {pkg}", device_specific=True)
+        main_window.run_adb_command(
+            f"shell pm disable-user {pkg}", device_specific=True
+        )
 
     def on_uninstall():
         pkg = pkg_input.text().strip()
@@ -48,7 +57,7 @@ def register(main_window):
             main_window,
             "Подтверждение",
             f"Вы действительно хотите удалить приложение\n{pkg} ?",
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
         )
         if reply == QMessageBox.StandardButton.Yes:
             main_window.run_adb_command(f"uninstall {pkg}", device_specific=True)

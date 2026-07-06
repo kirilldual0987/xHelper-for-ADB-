@@ -1,7 +1,7 @@
 # plugins/add_platform_tools_to_path.py
 # -*- coding: utf-8 -*-
 
-"""
+r"""
 add_platform_tools_to_path – плагин для xHelper
 
 Позволяет:
@@ -15,22 +15,28 @@ add_platform_tools_to_path – плагин для xHelper
 import os
 import sys
 import threading
-import winreg
-from pathlib import Path
 
 from PyQt6.QtCore import Qt, pyqtSignal, QObject
 from PyQt6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QPushButton,
-    QListWidget, QListWidgetItem, QLabel, QFileDialog,
-    QMessageBox, QProgressBar, QApplication
+    QWidget,
+    QVBoxLayout,
+    QHBoxLayout,
+    QPushButton,
+    QListWidget,
+    QListWidgetItem,
+    QLabel,
+    QFileDialog,
+    QMessageBox,
+    QProgressBar,
 )
+
 
 # --------------------------------------------------------------
 #   Класс‑рабочий поток – поиск platform‑tools
 # --------------------------------------------------------------
 class SearchWorker(QObject):
-    finished = pyqtSignal(list)      # список найденных путей
-    progress = pyqtSignal(str)      # статус (например, «Сканируем C:\…»)
+    finished = pyqtSignal(list)  # список найденных путей
+    progress = pyqtSignal(str)  # статус (например, «Сканируем C:\…»)
 
     def __init__(self):
         super().__init__()
@@ -42,7 +48,9 @@ class SearchWorker(QObject):
     def start_search(self):
         """Ищет папки platform‑tools на всех доступных дисках."""
         found = []
-        drives = [f"{c}:\\" for c in "ABCDEFGHIJKLMNOPQRSTUVWXYZ" if os.path.isdir(f"{c}:\\")]
+        drives = [
+            f"{c}:\\" for c in "ABCDEFGHIJKLMNOPQRSTUVWXYZ" if os.path.isdir(f"{c}:\\")
+        ]
         for drive in drives:
             if self._stop:
                 break
@@ -69,10 +77,10 @@ def register(main_window):
 
     # ----- Верхняя панель с кнопками ---------------------------------
     btn_layout = QHBoxLayout()
-    btn_search   = QPushButton("Найти platform‑tools")
-    btn_manual   = QPushButton("Добавить вручную")
+    btn_search = QPushButton("Найти platform‑tools")
+    btn_manual = QPushButton("Добавить вручную")
     btn_add_path = QPushButton("Добавить выбранные в PATH")
-    btn_add_path.setEnabled(False)          # активируем, когда в списке что‑то выбрано
+    btn_add_path.setEnabled(False)  # активируем, когда в списке что‑то выбрано
     btn_layout.addWidget(btn_search)
     btn_layout.addWidget(btn_manual)
     btn_layout.addStretch()
@@ -122,7 +130,7 @@ def register(main_window):
             QMessageBox.information(
                 tab,
                 "Не поддерживается",
-                "Поиск platform‑tools реализован только для Windows."
+                "Поиск platform‑tools реализован только для Windows.",
             )
             return
 
@@ -130,7 +138,7 @@ def register(main_window):
         list_widget.clear()
         _refresh_status("Идёт сканирование дисков…")
         prog_bar.setVisible(True)
-        prog_bar.setRange(0, 0)          # «мувинговый» индикатор
+        prog_bar.setRange(0, 0)  # «мувинговый» индикатор
 
         search_worker = SearchWorker()
         search_worker.progress.connect(_refresh_status)
@@ -147,7 +155,9 @@ def register(main_window):
             for p in paths:
                 item = QListWidgetItem(p)
                 list_widget.addItem(item)
-            status = f"Найдено каталогов: {len(paths)}. Выберите нужные и нажмите «Добавить»"
+            status = (
+                f"Найдено каталогов: {len(paths)}. Выберите нужные и нажмите «Добавить»"
+            )
             _refresh_status(status)
             btn_add_path.setEnabled(True)
             # По умолчанию выделяем всё
@@ -165,14 +175,15 @@ def register(main_window):
         )
         if folder:
             # Проверка, действительно ли это platform‑tools
-            if not os.path.isdir(os.path.join(folder, "platform-tools")) and \
-               not folder.lower().endswith("platform-tools"):
+            if not os.path.isdir(
+                os.path.join(folder, "platform-tools")
+            ) and not folder.lower().endswith("platform-tools"):
                 reply = QMessageBox.question(
                     tab,
                     "Подтверждение",
                     "Выбранный каталог не выглядит как platform‑tools.\n"
                     "Все‑равно добавить?",
-                    QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+                    QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
                 )
                 if reply != QMessageBox.StandardButton.Yes:
                     return
@@ -191,6 +202,16 @@ def register(main_window):
     #   Добавление выбранных путей в Windows‑PATH
     # --------------------------------------------------------------
     def add_to_path():
+        if not sys.platform.startswith("win"):
+            QMessageBox.information(
+                tab,
+                "Не поддерживается",
+                "Добавление platform-tools в PATH через этот плагин доступно только на Windows.",
+            )
+            return
+
+        import winreg
+
         selected_items = list_widget.selectedItems()
         if not selected_items:
             QMessageBox.warning(tab, "Ошибка", "Не выбрано ни одного пути")
@@ -204,7 +225,7 @@ def register(main_window):
                 winreg.HKEY_CURRENT_USER,
                 r"Environment",
                 0,
-                winreg.KEY_READ | winreg.KEY_WRITE
+                winreg.KEY_READ | winreg.KEY_WRITE,
             ) as hk:
                 try:
                     cur_path, reg_type = winreg.QueryValueEx(hk, "Path")
@@ -230,6 +251,7 @@ def register(main_window):
 
                     # Сообщаем системе о изменении (чтобы новые терминалы видели PATH)
                     import ctypes
+
                     HWND_BROADCAST = 0xFFFF
                     WM_SETTINGCHANGE = 0x001A
                     SMTO_ABORTIFHUNG = 0x0002
@@ -240,21 +262,22 @@ def register(main_window):
                         "Environment",
                         SMTO_ABORTIFHUNG,
                         5000,
-                        None
+                        None,
                     )
 
                     QMessageBox.information(
                         tab,
                         "Готово",
-                        f"Пути успешно добавлены в PATH:\n" + "\n".join(added) +
-                        "\n\nДля применения изменений перезапустите терминал/IDE."
+                        "Пути успешно добавлены в PATH:\n"
+                        + "\n".join(added)
+                        + "\n\nДля применения изменений перезапустите терминал/IDE.",
                     )
                     _refresh_status(f"PATH обновлён, добавлено: {len(added)} путь(ов)")
                 else:
                     QMessageBox.information(
                         tab,
                         "Информация",
-                        "Все выбранные пути уже находятся в переменной PATH."
+                        "Все выбранные пути уже находятся в переменной PATH.",
                     )
                     _refresh_status("Новых путей не добавлено.")
         except PermissionError:
@@ -262,14 +285,10 @@ def register(main_window):
                 tab,
                 "Ошибка доступа",
                 "Недостаточно прав для изменения реестра.\n"
-                "Запустите программу от имени администратора."
+                "Запустите программу от имени администратора.",
             )
         except Exception as exc:
-            QMessageBox.critical(
-                tab,
-                "Ошибка",
-                f"Не удалось изменить PATH:\n{exc}"
-            )
+            QMessageBox.critical(tab, "Ошибка", f"Не удалось изменить PATH:\n{exc}")
             _refresh_status(f"Ошибка: {exc}", error=True)
 
     # --------------------------------------------------------------
