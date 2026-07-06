@@ -7,6 +7,7 @@
 
 import os
 import subprocess
+import shlex
 from pathlib import Path
 
 from PyQt6.QtCore import Qt, QSize
@@ -26,7 +27,7 @@ def _run_adb(main_window, cmd, timeout=5):
     adb = main_window.settings.get("adb_path", "adb") if hasattr(main_window, "settings") else "adb"
     try:
         result = subprocess.run(
-            [adb] + cmd.split(),
+            main_window.build_adb_args(cmd, main_window.get_selected_device_id()) if hasattr(main_window, "build_adb_args") else [adb] + shlex.split(cmd),
             capture_output=True,
             text=True,
             timeout=timeout

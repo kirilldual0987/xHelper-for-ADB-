@@ -14,6 +14,7 @@ USB Tethering Manager – плагин для включения/выключе�
 
 
 import subprocess
+import shlex
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QLabel, QPushButton, QMessageBox
 )
@@ -26,7 +27,7 @@ def _run_adb(main_window, cmd):
     adb = main_window.settings.get("adb_path", "adb") if hasattr(main_window, "settings") else "adb"
     try:
         out = subprocess.check_output(
-            [adb] + cmd.split(),
+            main_window.build_adb_args(cmd, main_window.get_selected_device_id()) if hasattr(main_window, "build_adb_args") else [adb] + shlex.split(cmd),
             text=True,
             timeout=5
         )

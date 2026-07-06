@@ -1,7 +1,7 @@
 # plugins/add_platform_tools_to_path.py
 # -*- coding: utf-8 -*-
 
-"""
+r"""
 add_platform_tools_to_path – плагин для xHelper
 
 Позволяет:
@@ -15,7 +15,6 @@ add_platform_tools_to_path – плагин для xHelper
 import os
 import sys
 import threading
-import winreg
 from pathlib import Path
 
 from PyQt6.QtCore import Qt, pyqtSignal, QObject
@@ -191,6 +190,16 @@ def register(main_window):
     #   Добавление выбранных путей в Windows‑PATH
     # --------------------------------------------------------------
     def add_to_path():
+        if not sys.platform.startswith("win"):
+            QMessageBox.information(
+                tab,
+                "Не поддерживается",
+                "Добавление platform-tools в PATH через этот плагин доступно только на Windows."
+            )
+            return
+
+        import winreg
+
         selected_items = list_widget.selectedItems()
         if not selected_items:
             QMessageBox.warning(tab, "Ошибка", "Не выбрано ни одного пути")

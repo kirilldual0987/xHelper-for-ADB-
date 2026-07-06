@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Battery Monitor plugin for xHelper α‑1.0.1.
+Battery Monitor plugin for xHelper 2.0 Release.
 
 Adds a dock widget that shows:
   • Battery level (progress bar)
@@ -14,6 +14,7 @@ main_window.log_message().
 """
 
 import subprocess
+import shlex
 from PyQt6.QtWidgets import (
     QDockWidget, QWidget, QVBoxLayout, QLabel,
     QProgressBar, QPushButton
