@@ -21,6 +21,7 @@ device_cleanup – плагин для поиска и очистки «тяжё
 
 import os
 import subprocess
+import shlex
 import threading
 
 from PyQt6.QtCore import Qt, QTimer, QSize
@@ -46,7 +47,7 @@ def _run_adb(main_window, cmd: str) -> str:
     )
     try:
         out = subprocess.check_output(
-            [adb] + cmd.split(),
+            main_window.build_adb_args(cmd, main_window.get_selected_device_id()) if hasattr(main_window, "build_adb_args") else [adb] + shlex.split(cmd),
             text=True,
             timeout=15,
         )

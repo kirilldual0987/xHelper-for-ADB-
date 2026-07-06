@@ -9,6 +9,7 @@ clipboard_sync – синхронизация буфера обмена межд
 """
 
 import subprocess
+import shlex
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout,
     QTextEdit, QPushButton, QMessageBox, QLabel
@@ -19,7 +20,7 @@ from PyQt6.QtCore import Qt
 def _run_adb(main_window, cmd):
     adb = main_window.settings.get("adb_path", "adb") if hasattr(main_window, "settings") else "adb"
     try:
-        out = subprocess.check_output([adb] + cmd.split(), text=True, timeout=5)
+        out = subprocess.check_output(main_window.build_adb_args(cmd, main_window.get_selected_device_id()) if hasattr(main_window, "build_adb_args") else [adb] + shlex.split(cmd), text=True, timeout=5)
         return out
     except Exception as e:
         main_window.log_message(f"[Clipboard] Ошибка adb: {e}")
